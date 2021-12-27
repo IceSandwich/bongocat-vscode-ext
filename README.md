@@ -1,32 +1,15 @@
 # Bongo Cat Buddy
 
-Bongo cat buddy creates a bongo cat to type along with you 🐱
+This is a fork version of [Original Bongo Cat Buddy repository](https://github.com/JohnnyRacket/bongocat-vscode-ext).
 
-## Use
+What i modified:
 
-Run the command `Bongo Cat` to create your bongo cat buddy!
+1. Move to the explorer.
+2. Change animations according to what u type.
+3. Automatically load addon when startup vscode which is a bad idea but convenient.
 
-![Bongo Cat Use GIF](/media/bongo_cat_gif.gif?raw=true)
+# Result
+![usage](media/bongo_cat_modification.gif)
 
-## Features
-
-Bongo cat in a webview that types alongside you!
-
-> Note: Bongo cat currently does not recognize modifier keys when typing.
-
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of Bongo Cat Buddy
-
-### 1.4.0
-
-HD upgrade of bongo cat visuals
-
------------------------------------------------------------------------------------------------------------
-
-**Enjoy!**
+# Issues
+Yes. This modified version has some bugs but i don't know how to fix these because i just have learned how to develop vscode plugin for 1 day.

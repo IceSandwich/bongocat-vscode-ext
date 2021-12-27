@@ -16,10 +16,19 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:bongocat-buddy.bongoCat"
+    "*"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "vscode-bongocat.view",
+          "name": "Bongocat"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "bongocat-buddy.bongoCat",

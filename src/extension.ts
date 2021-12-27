@@ -1,47 +1,69 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 
-export function activate({ subscriptions, extensionUri }: vscode.ExtensionContext) {
+function getWebviewOptions(extensionPath: string): vscode.WebviewOptions & vscode.WebviewPanelOptions {
+	return {
+		// Enable javascript in the webview
+		enableScripts: true,
+		// And restrict the webview to only loading content from our extension's `media` directory.
+		localResourceRoots: [vscode.Uri.file(path.join(extensionPath, 'media'))]
+	};
+}
 
-	subscriptions.push(
-		vscode.commands.registerCommand('bongocat-buddy.bongoCat', () => {
-			// make web panel in panel 2 for bongo cat friend
-			const panel = vscode.window.createWebviewPanel(
-				'bongoCat',
-				'Bongo Cat',
-				vscode.ViewColumn.Two,
-				{ enableScripts: true }
-			);
-			// get its frame paths
-			const bongoRightPath = vscode.Uri.joinPath(extensionUri, 'media', 'bongo_right.png');
-			const bongoRightUri = panel.webview.asWebviewUri(bongoRightPath);
-			const bongoLeftPath = vscode.Uri.joinPath(extensionUri, 'media', 'bongo_left.png');
-			const bongoLeftUri = panel.webview.asWebviewUri(bongoLeftPath);
-			const bongoMiddlePath = vscode.Uri.joinPath(extensionUri, 'media', 'bongo_middle.png');
-			const bongoMiddleUri = panel.webview.asWebviewUri(bongoMiddlePath);
+class BongCatWebviewProvider {
+	public static readonly viewType = 'vscode-bongocat.view';
+	private _extensionPath: string;
+	private _webviewView?: vscode.WebviewView;
+	private _callback : Function;
 
-			const bongoFrameGenerator = getBongoState();
-			// set the html content with the resolved paths
-			panel.webview.html = getWebviewContent(bongoLeftUri, bongoRightUri, bongoMiddleUri);
+	constructor(extensionUri : string, callback : Function) {
+		this._extensionPath = extensionUri;
+		this._callback = callback;
+	}
 
-			// trigger the animation on the typing event, but still trigger default type command
-			let typeCommand = vscode.commands.registerCommand('type', (...args) => {
-				panel.webview.postMessage(bongoFrameGenerator.next().value);
-				return vscode.commands.executeCommand('default:type', ...args);
-			});
-			subscriptions.push(typeCommand);
+	resolveWebviewView = (webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext<unknown>, token: vscode.CancellationToken) => {
+		this._webviewView = webviewView;
+		
+		webviewView.webview.options = getWebviewOptions(this._extensionPath);
+		webviewView.webview.html = getWebViewContentWithResources(this._extensionPath, this._webviewView.webview);
 
-			//set up dispose
-			panel.onDidDispose(
-				() => {
-					typeCommand.dispose();
-				},
-				null,
-				subscriptions
-			);
+		this._callback();
+	}
 
-		})
-	);
+	getWebView() {
+		return this._webviewView;
+	}
+}
 
+export function activate({ subscriptions, extensionUri, extensionPath }: vscode.ExtensionContext) {
+	// vscode.commands.executeCommand('vscode-bongocat.view.focus');
+	let typeCommand = vscode.commands.registerCommand('type', (args) => {
+		// console.log("typein", args.text, "code", args.text.charCodeAt());
+		let state = BongoState.RIGHT;
+		let charCode : number = args.text.charCodeAt();
+		if ((charCode >= 104 && charCode <= 112) || charCode == 117 || charCode == 121 || (charCode >= 123 && charCode <= 125)) { // h~p || u || y || '{|}'
+			state = BongoState.LEFT;
+		}
+		if ((charCode >= 72 && charCode <= 80) || charCode == 85 || charCode == 89 || (charCode >= 91 && charCode <= 95)) { // h~p || u || y || '{|}'
+			state = BongoState.LEFT;
+		}
+		if ((charCode >= 54 && charCode <= 63) || (charCode >= 38 && charCode <= 47)) { // 6-? || &~/
+			state = BongoState.LEFT;
+		}
+		webviewViewProvider.getWebView()!.webview.postMessage(state); //bongoFrameGenerator.next().value);
+		return vscode.commands.executeCommand('default:type', args);
+	});
+	
+	let webviewViewProvider: BongCatWebviewProvider = new BongCatWebviewProvider(extensionPath, () => {
+		webviewViewProvider.getWebView()!.onDidDispose(
+			() => {
+				typeCommand.dispose();
+			},
+			null,
+			subscriptions
+		);
+	});
+	subscriptions.push(vscode.window.registerWebviewViewProvider(BongCatWebviewProvider.viewType, webviewViewProvider));
 }
 
 function getWebviewContent(bongoLeftUri: vscode.Uri, bongoRightUri: vscode.Uri, bongoMiddleUri: vscode.Uri) {
@@ -83,22 +105,21 @@ function getWebviewContent(bongoLeftUri: vscode.Uri, bongoRightUri: vscode.Uri, 
 	</html>`;
 }
 
+function getWebViewContentWithResources(extensionPath : string, webview : vscode.Webview) {
+	// get its frame paths
+	const bongoRightPath = vscode.Uri.file(path.join(extensionPath, 'media', 'bongo_right.png'));
+	const bongoRightUri = webview.asWebviewUri(bongoRightPath);
+	const bongoLeftPath = vscode.Uri.file(path.join(extensionPath, 'media', 'bongo_left.png'));
+	const bongoLeftUri = webview.asWebviewUri(bongoLeftPath);
+	const bongoMiddlePath = vscode.Uri.file(path.join(extensionPath, 'media', 'bongo_middle.png'));
+	const bongoMiddleUri = webview.asWebviewUri(bongoMiddlePath);
+
+	return getWebviewContent(bongoLeftUri, bongoRightUri, bongoMiddleUri);
+}
+
 enum BongoState {
 	LEFT = 'left',
 	RIGHT = 'right'
-}
-
-function* getBongoState() {
-	let current = BongoState.LEFT;
-	while (true) {
-		if (current === BongoState.LEFT) {
-			current = BongoState.RIGHT;
-			yield BongoState.RIGHT;
-		} else {
-			current = BongoState.LEFT;
-			yield BongoState.LEFT;
-		}
-	}
 }
 
 // this method is called when your extension is deactivated
