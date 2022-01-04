@@ -37,24 +37,30 @@ class BongCatWebviewProvider {
 
 export function activate({ subscriptions, extensionUri, extensionPath }: vscode.ExtensionContext) {
 	// vscode.commands.executeCommand('vscode-bongocat.view.focus');
+	let webviewViewProvider: BongCatWebviewProvider;
 	let typeCommand = vscode.commands.registerCommand('type', (args) => {
 		// console.log("typein", args.text, "code", args.text.charCodeAt());
-		let state = BongoState.RIGHT;
-		let charCode : number = args.text.charCodeAt();
-		if ((charCode >= 104 && charCode <= 112) || charCode == 117 || charCode == 121 || (charCode >= 123 && charCode <= 125)) { // h~p || u || y || '{|}'
-			state = BongoState.LEFT;
+		try {
+			let state = BongoState.RIGHT;
+			let charCode : number = args.text.charCodeAt();
+			if ((charCode >= 104 && charCode <= 112) || charCode == 117 || charCode == 121 || (charCode >= 123 && charCode <= 125)) { // h~p || u || y || '{|}'
+				state = BongoState.LEFT;
+			}
+			if ((charCode >= 72 && charCode <= 80) || charCode == 85 || charCode == 89 || (charCode >= 91 && charCode <= 95)) { // h~p || u || y || '{|}'
+				state = BongoState.LEFT;
+			}
+			if ((charCode >= 54 && charCode <= 63) || (charCode >= 38 && charCode <= 47)) { // 6-? || &~/
+				state = BongoState.LEFT;
+			}
+			webviewViewProvider.getWebView()!.webview.postMessage(state); //bongoFrameGenerator.next().value);
+
+		} catch (error) {
+			// nothing to do
 		}
-		if ((charCode >= 72 && charCode <= 80) || charCode == 85 || charCode == 89 || (charCode >= 91 && charCode <= 95)) { // h~p || u || y || '{|}'
-			state = BongoState.LEFT;
-		}
-		if ((charCode >= 54 && charCode <= 63) || (charCode >= 38 && charCode <= 47)) { // 6-? || &~/
-			state = BongoState.LEFT;
-		}
-		webviewViewProvider.getWebView()!.webview.postMessage(state); //bongoFrameGenerator.next().value);
 		return vscode.commands.executeCommand('default:type', args);
 	});
 	
-	let webviewViewProvider: BongCatWebviewProvider = new BongCatWebviewProvider(extensionPath, () => {
+	webviewViewProvider = new BongCatWebviewProvider(extensionPath, () => {
 		webviewViewProvider.getWebView()!.onDidDispose(
 			() => {
 				typeCommand.dispose();
