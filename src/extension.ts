@@ -26,7 +26,7 @@ class BongCatWebviewProvider {
 		
 		webviewView.webview.options = getWebviewOptions(this._extensionPath);
 		webviewView.webview.html = getWebViewContentWithResources(this._extensionPath, this._webviewView.webview);
-
+		
 		this._callback();
 	}
 
